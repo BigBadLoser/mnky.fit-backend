@@ -1,0 +1,2 @@
+# mnky.fit
+link shortener
