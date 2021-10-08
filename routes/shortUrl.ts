@@ -1,42 +1,56 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-var-requires */
 const express = require("express");
 import { nanoid } from 'nanoid';
 const validUrl = require("valid-url");
-const config = require("config");
-const Url = require("../model/url");
+const config = require("../config");
 
-var shortUrlRoute = express.Router();
+import Url from "../model/Url";
+import { supabase } from '../lib/initSupabase';
+import util from 'util';
+import cors from 'cors';
 
-shortUrlRoute.post("/", async (request, response)=>{
-    const longUrl = request.body.longUrl;
-    const baseUrl = config.get("baseURL");
+const shortUrlRoute = express.Router();
+
+shortUrlRoute.post("/", cors(), async (request: any, response: any)=>{
+    const longUrl : string = request.body?.longUrl;
+    const baseUrl = config.baseUrl;
+
+    /*
     if(!validUrl.isUri(baseUrl)){
         return response.status(401).json("Internal error. Please come back later.");
     }
+    */
 
     const urlCode = nanoid(4);
-
+    console.log(util.inspect(request.body))
     if(validUrl.isUri(longUrl)){
 
         try{
-            var url = await Url.findOne({longUrl : longUrl});
+            const { data : url, error } = await supabase
+            .from('links').select('*').eq('longUrl', longUrl).single();
             if(url){
-                return  response.status(200).json(url);
+                return response.status(200).json(url);
             }else{
 
                 const shortUrl = baseUrl + "/" + urlCode;
-                url  = new Url({
+                const url  = new Url(
+                    urlCode,
                     longUrl,
                     shortUrl,
-                    urlCode,
-                    clickCount: 0
-                });
+                    0
+                );
                 
-                await url.save()
+                const { data, error } = await supabase
+                .from('links')
+                .upsert(url);
+
+
                 return response.status(201).json(url);
             }
         }catch(err){
-            console.error(err.message);
-            return response.status(500).json("Internal Server error " + err.message);
+            console.error(err);
+            return response.status(500).json("Internal Server error " + err);
         }
     }else{
         response.status(400).json("This URL is invalid, please enter a valid URL.");
