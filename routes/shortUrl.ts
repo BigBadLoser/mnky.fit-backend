@@ -12,7 +12,7 @@ import cors from 'cors';
 
 const shortUrlRoute = express.Router();
 
-shortUrlRoute.post("/", cors(), async (request: any, response: any)=>{
+shortUrlRoute.post("/", cors(), async (request: any, response: any, next: any)=>{
     const longUrl : string = request.body?.longUrl;
     const baseUrl = config.baseUrl;
 
